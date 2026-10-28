@@ -1,5 +1,6 @@
 import { Redo2, Undo2 } from 'lucide-react'
 import { useStore } from 'zustand'
+import { DurationPalette } from '@/components/DurationPalette'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -7,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { keyName, parsePitchClass } from '@/model/pitch'
 import { barTicks } from '@/model/time'
 import { EIGHTH, type KeySignature } from '@/model/types'
+import { redo, undo } from '@/editor/commands'
 import { useScoreStore } from '@/store/score'
 
 const KEYS = ['C', 'G', 'D', 'A', 'E', 'B', 'F', 'Bb', 'Eb', 'Ab', 'Am', 'Em', 'Bm', 'F#m', 'Dm', 'Gm', 'Cm']
@@ -30,7 +32,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function Toolbar() {
   const score = useScoreStore((s) => s.score)
   const dispatch = useScoreStore((s) => s.dispatch)
-  const { undo, redo } = useScoreStore.temporal.getState()
   const canUndo = useStore(useScoreStore.temporal, (s) => s.pastStates.length > 0)
   const canRedo = useStore(useScoreStore.temporal, (s) => s.futureStates.length > 0)
 
@@ -115,6 +116,10 @@ export function Toolbar() {
           value={score.tempo}
           onChange={(e) => e.target.value && dispatch({ type: 'setTempo', tempo: Number(e.target.value) })}
         />
+      </Field>
+
+      <Field label="Note">
+        <DurationPalette />
       </Field>
 
       <div className="ml-auto flex gap-1">

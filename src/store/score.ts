@@ -19,7 +19,23 @@ export const useScoreStore = create<ScoreStore>()(
   ),
 )
 
-export const useUndo = () => useScoreStore.temporal.getState()
+let transactionStart: Score | null = null
+
+/** Groups the edits until `commitTransaction` into one undo step (e.g. a drag). */
+export function beginTransaction() {
+  transactionStart = useScoreStore.getState().score
+  useScoreStore.temporal.getState().pause()
+}
+
+export function commitTransaction() {
+  if (!transactionStart) return
+  const start = transactionStart
+  const end = useScoreStore.getState().score
+  transactionStart = null
+  if (end !== start) useScoreStore.setState({ score: start })
+  useScoreStore.temporal.getState().resume()
+  if (end !== start) useScoreStore.setState({ score: end })
+}
 
 // Handy for poking at the model from the browser console during development.
-if (import.meta.env.DEV) Object.assign(window, { scoreStore: useScoreStore })
+if (import.meta.env.DEV && typeof window !== 'undefined') Object.assign(window, { scoreStore: useScoreStore })

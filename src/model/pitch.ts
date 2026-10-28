@@ -49,3 +49,23 @@ export function keyAlterations(key: KeySignature): Record<Step, Alter> {
   for (const pc of keyScale(key)) out[pc.step] = pc.alter
   return out
 }
+
+/**
+ * Moves a pitch a semitone up or down. The new spelling follows the key
+ * signature when it can, otherwise sharps going up and flats going down.
+ */
+export function stepChromatic(p: Pitch, direction: 1 | -1, key: KeySignature): Pitch {
+  const target = toMidi(p) + direction
+  const keyAlter = keyAlterations(key)
+  const candidates: Pitch[] = []
+  for (const octave of [p.octave - 1, p.octave, p.octave + 1]) {
+    for (const step of STEPS) {
+      for (const alter of [-1, 0, 1] as Alter[]) {
+        const c = { step, alter, octave }
+        if (toMidi(c) === target) candidates.push(c)
+      }
+    }
+  }
+  const rank = (c: Pitch) => (c.alter === keyAlter[c.step] ? 0 : c.alter === direction ? 1 : c.alter === 0 ? 2 : 3)
+  return candidates.sort((a, b) => rank(a) - rank(b))[0]
+}

@@ -83,3 +83,13 @@ describe('sample', () => {
     expect(last.start + last.duration).toBe(scoreLength(s))
   })
 })
+
+describe('setChord with an off-beat pickup', () => {
+  it('snaps to beats counted from bar 1', () => {
+    const G = { root: { step: 'G', alter: 0 }, quality: '' } as const
+    let s = applyOp(empty(), { type: 'setPickup', pickup: TPQ / 2 })
+    s = applyOp(s, { type: 'setChord', start: TPQ / 2 + 10, chord: G })
+    s = applyOp(s, { type: 'setChord', start: TPQ * 2 + 100, chord: G })
+    expect(s.chords.map((c) => c.start)).toEqual([TPQ / 2, TPQ * 2.5])
+  })
+})

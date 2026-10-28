@@ -1,10 +1,9 @@
 import { produce, type Draft } from 'immer'
 import { nanoid } from 'nanoid'
 import type { ChordSpec } from './chord'
-import { barTicks, scoreLength } from './time'
+import { barTicks, scoreLength, snapToBeat } from './time'
 import {
   EIGHTH,
-  QUARTER,
   type KeySignature,
   type Note,
   type NoteId,
@@ -103,7 +102,7 @@ function apply(score: Draft<Score>, op: EditOp) {
       return
     }
     case 'setChord': {
-      const start = snap(op.start, QUARTER)
+      const start = snapToBeat(score, op.start)
       score.chords = score.chords.filter((c) => c.start !== start)
       if (op.chord) score.chords.push({ id: nanoid(), start, ...op.chord })
       score.chords.sort((a, b) => a.start - b.start)

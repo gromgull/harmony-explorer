@@ -30,3 +30,17 @@ export function measureBounds(score: Score): MeasureBounds[] {
 export function beatStart(measureStart: Tick, tick: Tick): Tick {
   return measureStart + Math.floor((tick - measureStart) / TPQ) * TPQ
 }
+
+/**
+ * Snaps to the nearest beat. Beats are counted from the downbeat of bar 1,
+ * so in a pickup of 1½ beats the first beat falls an eighth into the score.
+ */
+export function snapToBeat(score: Score, tick: Tick): Tick {
+  const t = score.pickup + Math.round((tick - score.pickup) / TPQ) * TPQ
+  return t < 0 ? t + TPQ : t
+}
+
+/** The first beat at or after `tick`. */
+export function firstBeatFrom(score: Score, tick: Tick): Tick {
+  return tick + ((((score.pickup - tick) % TPQ) + TPQ) % TPQ)
+}

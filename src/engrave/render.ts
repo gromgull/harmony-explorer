@@ -15,7 +15,8 @@ import {
 import { chordLabel } from '@/model/chord'
 import { keyName } from '@/model/pitch'
 import { barTicks } from '@/model/time'
-import { EIGHTH, type Alter, type Clef, type NoteId, type Pitch, type Score, type Tick } from '@/model/types'
+import { EIGHTH, TPQ, type Alter, type Clef, type NoteId, type Pitch, type Score, type Tick } from '@/model/types'
+import { interpolateX } from './geometry'
 import { layoutScore, type MeasureLayout, type Tickable } from './layout'
 
 // ---- geometry ----
@@ -25,6 +26,7 @@ const LYRIC_SPACE = 34 // below each staff
 const SYSTEM_GAP = 28
 const MEASURE_PAD_END = 14
 const SPREAD = 1.5 // how much looser than the minimal width a measure is packed
+export const SELECTED = '#2563eb'
 
 /** Geometry kept for hit-testing and overlays (playback cursor, editing). */
 export type HitMap = {
@@ -33,6 +35,7 @@ export type HitMap = {
   systems: {
     top: number
     bottom: number
+    chordY: number // baseline of the chord symbols
     staves: { voiceId: string; clef: Clef; topLineY: number; spacing: number }[]
     measures: { index: number; start: Tick; end: Tick; x0: number; x1: number; ticks: [Tick, number][] }[]
   }[]
@@ -83,7 +86,9 @@ function minMeasureWidth(score: Score, m: MeasureLayout) {
   const voices = score.voices.map((_, i) => buildVoice(m, buildNotes(score, m, i).map((n) => n.note)))
   const f = new Formatter()
   f.joinVoices(voices)
-  return f.preCalculateMinTotalWidth(voices) + MEASURE_PAD_END + 20
+  // Leave room to click notes into sparse or empty bars.
+  const roomy = 40 * ((m.end - m.start) / TPQ)
+  return Math.max(f.preCalculateMinTotalWidth(voices), roomy) + MEASURE_PAD_END + 20
 }
 
 function modifierWidth(score: Score, withTime: boolean) {
@@ -125,16 +130,12 @@ function svgText(parent: SVGElement, text: string, x: number, y: number, cls: st
   parent.appendChild(el)
 }
 
-function interpolateX(ticks: [Tick, number][], tick: Tick) {
-  for (let i = 0; i < ticks.length - 1; i++) {
-    const [t0, x0] = ticks[i]
-    const [t1, x1] = ticks[i + 1]
-    if (tick >= t0 && tick <= t1) return x0 + ((tick - t0) / (t1 - t0 || 1)) * (x1 - x0)
-  }
-  return ticks.at(-1)![1]
-}
-
-export function renderScore(container: HTMLDivElement, score: Score, width: number): HitMap {
+export function renderScore(
+  container: HTMLDivElement,
+  score: Score,
+  width: number,
+  selection: ReadonlySet<NoteId> = new Set(),
+): HitMap {
   container.innerHTML = ''
   const renderer = new Renderer(container, Renderer.Backends.SVG)
   const ctx = renderer.getContext() as SVGContext
@@ -159,7 +160,7 @@ export function renderScore(container: HTMLDivElement, score: Score, width: numb
     // Stretch to the full width, except a short last line.
     const scale = isLast && natural < usable * 0.6 ? 1 : usable / natural
 
-    const system: HitMap['systems'][number] = { top: 0, bottom: 0, staves: [], measures: [] }
+    const system: HitMap['systems'][number] = { top: 0, bottom: 0, chordY: 0, staves: [], measures: [] }
     const ties: StaveTie[] = []
     const beams: Beam[] = []
     const notes: { id: NoteId; x: number; y: number }[] = []
@@ -189,6 +190,9 @@ export function renderScore(container: HTMLDivElement, score: Score, width: numb
       staves.forEach((s) => s.setNoteStartX(noteStart))
 
       const built = score.voices.map((_, vi) => buildNotes(score, m, vi))
+      for (const { t, note } of built.flat()) {
+        if (t.noteId && selection.has(t.noteId)) note.setStyle({ fillStyle: SELECTED, strokeStyle: SELECTED })
+      }
       const vfVoices = built.map((b) => buildVoice(m, b.map((n) => n.note)))
       built.forEach((b) => {
         const eighths = b.map((n) => n.note).filter((n) => n.getDuration() === '8' && !n.isRest())
@@ -275,6 +279,7 @@ export function renderScore(container: HTMLDivElement, score: Score, width: numb
     group.setAttribute('transform', `translate(0 ${dy})`)
     system.top = cursorY
     system.bottom = cursorY + boxHeight
+    system.chordY = chordY + dy
     system.staves.forEach((s) => (s.topLineY += dy))
     for (const n of notes) hit.notes.set(n.id, [...(hit.notes.get(n.id) ?? []), { x: n.x, y: n.y + dy }])
     hit.systems.push(system)

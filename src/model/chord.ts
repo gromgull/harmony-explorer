@@ -28,3 +28,8 @@ export function chordLabel(c: ChordSpec): string {
   const bass = c.bass ? '/' + pretty(pitchClassName(c.bass)) : ''
   return pretty(pitchClassName(c.root)) + c.quality.replace(/b(?=\d)/g, '♭') + bass
 }
+
+/** Plain-text form that `parseChordSymbol` reads back, e.g. "F#m7/C#". */
+export function chordText(c: ChordSpec): string {
+  return pitchClassName(c.root) + c.quality + (c.bass ? '/' + pitchClassName(c.bass) : '')
+}

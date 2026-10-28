@@ -4,6 +4,7 @@ import {
   Dot,
   Formatter,
   Fraction,
+  Metrics,
   Renderer,
   Stave,
   StaveConnector,
@@ -213,8 +214,8 @@ export function renderScore(
         new StaveConnector(staves[0], staves.at(-1)!).setType('singleRight').setContext(ctx).draw()
       }
 
-      // ticks → x, across all voices
-      const tickX = new Map<Tick, number>([[m.start, noteStart]])
+      // ticks → x, across all voices; an empty bar's first beat goes where VexFlow would put a note
+      const tickX = new Map<Tick, number>()
       built.forEach((b, vi) =>
         b.forEach(({ t, note, barRest }) => {
           if (!barRest) tickX.set(t.start, Math.min(tickX.get(t.start) ?? Infinity, note.getAbsoluteX()))
@@ -240,6 +241,7 @@ export function renderScore(
           if (t.lyric) lyrics.push({ text: t.lyric, x: headX, vi })
         }),
       )
+      if (!tickX.has(m.start)) tickX.set(m.start, noteStart + Metrics.get('Stave.padding', 0))
       tickX.set(m.end, x + measureWidth)
       const ticks = [...tickX.entries()].sort((a, b) => a[0] - b[0])
 

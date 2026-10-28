@@ -140,6 +140,7 @@ export function renderScore(
   score: Score,
   width: number,
   selection: ReadonlySet<NoteId> = new Set(),
+  lyricEditing?: NoteId, // counts as a syllable, so the previous one's hyphen shows while typing
 ): HitMap {
   container.innerHTML = ''
   const renderer = new Renderer(container, Renderer.Backends.SVG)
@@ -238,7 +239,7 @@ export function renderScore(
           const box = note.getBoundingBox()
           if (vi === 0) chordY = Math.min(chordY, box.getY() - 10)
           lyricY[vi] = Math.max(lyricY[vi], box.getY() + box.getH() + 16)
-          if (t.lyric) lyrics.push({ text: t.lyric, x: headX, vi })
+          if (t.lyric || (t.noteId && t.noteId === lyricEditing)) lyrics.push({ text: t.lyric ?? '', x: headX, vi })
         }),
       )
       if (!tickX.has(m.start)) tickX.set(m.start, noteStart + Metrics.get('Stave.padding', 0))
@@ -279,7 +280,7 @@ export function renderScore(
     // lyrics, with hyphens centred between syllables of the same word
     lyrics.forEach((l, i) => {
       const continues = l.text.endsWith('-')
-      svgText(group, continues ? l.text.slice(0, -1) : l.text, l.x, lyricY[l.vi], 'lyric')
+      if (l.text) svgText(group, continues ? l.text.slice(0, -1) : l.text, l.x, lyricY[l.vi], 'lyric')
       const next = lyrics.slice(i + 1).find((n) => n.vi === l.vi)
       if (continues && next) svgText(group, '-', (l.x + next.x) / 2, lyricY[l.vi], 'lyric')
     })

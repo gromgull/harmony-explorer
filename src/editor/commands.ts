@@ -139,10 +139,10 @@ export function regenerate(voiceId: string, highBaritone?: boolean) {
 const leadNotes = () => score().voices.find((v) => v.role === 'lead')?.notes ?? []
 
 /** Opens the lyric input on a lead note, or on the selected one. */
-export function openLyricEdit(noteId?: NoteId) {
+export function openLyricEdit(noteId?: NoteId, caret?: 'start' | 'end') {
   const notes = leadNotes()
   const id = noteId ?? editor().selection.find((s) => notes.some((n) => n.id === s)) ?? notes[0]?.id
-  if (id) setEditor({ lyricEdit: { noteId: id }, chordEdit: null, selection: [id] })
+  if (id) setEditor({ lyricEdit: { noteId: id, caret }, chordEdit: null, selection: [id] })
 }
 
 export const closeLyricEdit = () => setEditor({ lyricEdit: null })

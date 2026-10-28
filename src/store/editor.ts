@@ -6,7 +6,7 @@ type EditorStore = {
   selection: NoteId[]
   inputDuration: Tick // duration of newly inserted notes
   chordEdit: { tick: Tick } | null // open chord symbol input
-  lyricEdit: { noteId: NoteId } | null // open lyric input
+  lyricEdit: { noteId: NoteId; caret?: 'start' | 'end' } | null // open lyric input; no caret selects the syllable
 }
 
 export const useEditorStore = create<EditorStore>()(() => ({

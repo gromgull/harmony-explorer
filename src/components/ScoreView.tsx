@@ -41,10 +41,10 @@ export function ScoreView({ score }: { score: Score }) {
 
   useEffect(() => {
     if (!ready || width === 0) return
-    const result = renderScore(canvas.current!, score, width, new Set(selection))
+    const result = renderScore(canvas.current!, score, width, new Set(selection), lyricEdit?.noteId)
     if (import.meta.env.DEV) Object.assign(window, { hitMap: result }) // for debugging and browser tests
     setHit(result)
-  }, [score, width, ready, selection])
+  }, [score, width, ready, selection, lyricEdit?.noteId])
 
   const point = (e: React.PointerEvent) => {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -146,7 +146,7 @@ export function ScoreView({ score }: { score: Score }) {
         </svg>
       )}
       {chordEdit && chordPos && <ChordInput key={chordEdit.tick} score={score} tick={chordEdit.tick} {...chordPos} />}
-      {lyricEdit && lyricPos && <LyricInput key={lyricEdit.noteId} score={score} noteId={lyricEdit.noteId} {...lyricPos} />}
+      {lyricEdit && lyricPos && <LyricInput key={lyricEdit.noteId} score={score} noteId={lyricEdit.noteId} caret={lyricEdit.caret} {...lyricPos} />}
     </div>
   )
 }

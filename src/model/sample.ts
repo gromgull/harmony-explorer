@@ -6,17 +6,20 @@ import { EIGHTH, TPQ, type Chord, type Note, type Score } from './types'
 
 const D: Record<string, number> = { '8': EIGHTH, q: TPQ, 'q.': TPQ * 1.5, h: TPQ * 2, 'h.': TPQ * 3, w: TPQ * 4 }
 
-/** Writes a melody as consecutive notes: "D4:q:A-" = pitch : duration : lyric (optional). */
+/**
+ * Writes a melody as consecutive notes: "D4:q:A-" = pitch : duration : lyric (optional),
+ * "r:h" = a rest.
+ */
 function melody(tokens: string, ...holds: [index: number, extra: number][]): Note[] {
   let t = 0
   const notes = tokens
     .trim()
     .split(/\s+/)
-    .map((tok) => {
+    .flatMap((tok) => {
       const [pitch, dur, lyric] = tok.split(':')
-      const note: Note = { id: nanoid(), start: t, duration: D[dur], pitch: parsePitch(pitch), lyric }
-      t += note.duration
-      return note
+      const start = t
+      t += D[dur]
+      return pitch === 'r' ? [] : [{ id: nanoid(), start, duration: D[dur], pitch: parsePitch(pitch), lyric }]
     })
   // Lengthen held notes and shift what follows, so ties across barlines can be written.
   for (const [i, extra] of holds) {
@@ -76,3 +79,84 @@ export function amazingGrace(): Score {
     ],
   }
 }
+
+/**
+ * Keep on the Sunny Side (Blenkhorn/Entwisle, 1899; public domain), verse 1 and chorus.
+ * Melody and chords after the abcnotation.com transcription (thornton.rose collection).
+ */
+export function keepOnTheSunnySide(): Score {
+  const timeSignature = { beats: 4, beatUnit: 4 } as const
+  const pickup = TPQ * 2
+  const notes = melody(
+    `G4:q:There's G4:q:a
+     G4:h:dark A4:q:and B4:q:a
+     A4:q:trou- G4:q:bled F#4:q:side E4:q:of
+     D4:w:life
+     r:h G4:q:There's B4:q:a
+     D5:h:bright D5:q:and E5:q:a
+     D5:q:sun- B4:q:ny A4:q:side G4:q
+     A4:w:too
+     r:h A4:q:Though B4:q:we
+     C5:h:meet B4:q:with A4:q:the
+     D5:h.:dark- B4:q:ness
+     A4:h:and G4:h:strife
+     r:h r:q G4:q:The
+     A4:h:sun- A4:q:ny G4:q:side
+     F#4:q:we D4:q:al- E4:q:so F#4:q:may
+     G4:h.:view r:q
+
+     D5:h:Keep D5:q:on E5:q:the
+     D5:q:sun- B4:q:ny A4:h:side
+     G4:q:al- G4:q:ways G4:q:on A4:q:the
+     G4:q:sun- G4:q:ny F#4:q:side E4:q
+     D4:h:keep G4:q:on A4:q:the
+     B4:q:sun- B4:q:ny C5:q:side B4:q:of
+     A4:w:life
+     r:h B4:q:It D5:q:will
+     E5:q:help D5:q:us D5:q:ev'- E5:q:ry
+     B4:h:day A4:q:it G4:q:will
+     A4:q:bright- G4:q:en G4:q:all E4:q:the
+     D4:h:way G4:q:if A4:q:we'll
+     B4:h:keep C5:q:on C5:q:the
+     B4:q:sun- B4:q:ny A4:q:side F#4:q:of
+     G4:h.:life r:q`,
+  )
+  return {
+    version: 1,
+    title: 'Keep on the Sunny Side',
+    timeSignature,
+    key: { tonic: { step: 'G', alter: 0 }, mode: 'major' },
+    tempo: 110,
+    pickup,
+    measureCount: 30,
+    chords: chords(pickup, barTicks(timeSignature), [
+      // verse
+      'G', 'C', 'G', 'G', 'G', 'G', 'D', 'D', 'D', 'D', 'G', 'G', 'D', 'D', 'G',
+      // chorus
+      'G', 'G', 'C', 'G', 'G', 'G', 'D', 'D', 'G', 'G', 'C', 'G', 'G C:3', 'G D:3', 'G',
+    ]),
+    voices: [
+      { id: 'lead', role: 'lead', name: 'Lead', clef: 'treble', notes, source: { kind: 'manual' } },
+    ],
+  }
+}
+
+/** A blank page: four empty bars of 4/4 in G. */
+export function emptyScore(): Score {
+  return {
+    version: 1,
+    title: 'Untitled',
+    timeSignature: { beats: 4, beatUnit: 4 },
+    key: { tonic: { step: 'G', alter: 0 }, mode: 'major' },
+    tempo: 100,
+    pickup: 0,
+    measureCount: 4,
+    chords: [],
+    voices: [{ id: 'lead', role: 'lead', name: 'Lead', clef: 'treble', notes: [], source: { kind: 'manual' } }],
+  }
+}
+
+export const EXAMPLES = [
+  { title: 'Amazing Grace', make: amazingGrace },
+  { title: 'Keep on the Sunny Side', make: keepOnTheSunnySide },
+]

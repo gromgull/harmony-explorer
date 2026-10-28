@@ -1,4 +1,6 @@
+import { ProjectMenu } from '@/components/ProjectMenu'
 import { ScoreView } from '@/components/ScoreView'
+import { TitleInput } from '@/components/TitleInput'
 import { useEffect } from 'react'
 import { Toolbar } from '@/components/Toolbar'
 import { Transport } from '@/components/Transport'
@@ -25,8 +27,11 @@ export default function App() {
   }, [])
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
-      <header className="flex items-baseline justify-between">
-        <h1 className="text-2xl font-semibold">{score.title || 'Untitled'}</h1>
+      <header className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <ProjectMenu />
+          <TitleInput />
+        </div>
         <Transport />
       </header>
       <Toolbar />

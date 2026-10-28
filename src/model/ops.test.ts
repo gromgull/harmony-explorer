@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { applyOp } from './ops'
 import { parsePitch } from './pitch'
-import { amazingGrace } from './sample'
-import { measureBounds, scoreLength } from './time'
+import { amazingGrace, keepOnTheSunnySide } from './sample'
+import { barTicks, measureBounds, scoreLength } from './time'
 import { TPQ, type Score } from './types'
 
 const empty = (): Score => ({
@@ -76,11 +76,20 @@ describe('setChord', () => {
   })
 })
 
-describe('sample', () => {
-  it('fits exactly in its bars', () => {
-    const s = amazingGrace()
+describe('samples', () => {
+  it.each([amazingGrace, keepOnTheSunnySide])('%o fills its last bar', (make) => {
+    const s = make()
     const last = s.voices[0].notes.at(-1)!
-    expect(last.start + last.duration).toBe(scoreLength(s))
+    const end = last.start + last.duration
+    expect(end).toBeLessThanOrEqual(scoreLength(s))
+    expect(end).toBeGreaterThan(scoreLength(s) - barTicks(s.timeSignature))
+  })
+
+  it('places every note of Keep on the Sunny Side in its bar', () => {
+    // 2-beat pickup, then 30 bars; the chorus starts on the downbeat of bar 16.
+    const s = keepOnTheSunnySide()
+    const keep = s.voices[0].notes.find((n) => n.lyric === 'Keep')!
+    expect(keep.start).toBe(s.pickup + 15 * barTicks(s.timeSignature))
   })
 })
 

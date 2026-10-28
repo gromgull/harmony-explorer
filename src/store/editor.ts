@@ -13,3 +13,5 @@ export const useEditorStore = create<EditorStore>()(() => ({
   inputDuration: TPQ,
   chordEdit: null,
 }))
+
+if (import.meta.env.DEV && typeof window !== 'undefined') Object.assign(window, { editorStore: useEditorStore })

@@ -10,6 +10,7 @@ const BINDINGS: Binding[] = [
   { key: 'Delete', run: cmd.deleteSelection },
   { key: 'Backspace', run: cmd.deleteSelection },
   { key: 'Escape', run: cmd.clearSelection },
+  { key: ' ', run: cmd.togglePlay },
   { key: 'ArrowUp', run: () => cmd.transposeSelection(1) },
   { key: 'ArrowDown', run: () => cmd.transposeSelection(-1) },
   { key: 'ArrowLeft', run: () => cmd.selectAdjacent(-1) },

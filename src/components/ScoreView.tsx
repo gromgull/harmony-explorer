@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChordInput } from '@/components/ChordInput'
+import { PlaybackCursor } from '@/components/PlaybackCursor'
 import * as cmd from '@/editor/commands'
 import { locate, noteAt, yForIndex, type Target } from '@/editor/hittest'
 import { fontsReady } from '@/engrave/fonts'
@@ -129,6 +130,7 @@ export function ScoreView({ score }: { score: Score }) {
           onPointerLeave={() => setHover(null)}
         >
           {hover && !dragging && <Ghost target={hover} />}
+          <PlaybackCursor hit={hit} />
         </svg>
       )}
       {chordEdit && chordPos && <ChordInput key={chordEdit.tick} score={score} tick={chordEdit.tick} {...chordPos} />}

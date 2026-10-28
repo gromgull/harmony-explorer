@@ -3,7 +3,9 @@ import { chordText, parseChordSymbol } from '@/model/chord'
 import { stepChromatic } from '@/model/pitch'
 import { firstBeatFrom, scoreLength } from '@/model/time'
 import { EIGHTH, TPQ, type Note, type NoteId, type Pitch, type Tick } from '@/model/types'
+import { play, preview, stop } from '@/playback/player'
 import { useEditorStore } from '@/store/editor'
+import { usePlaybackStore } from '@/store/playback'
 import { useScoreStore } from '@/store/score'
 
 // Every user action goes through these, whether it comes from the mouse,
@@ -32,6 +34,7 @@ export function select(ids: NoteId[]) {
   const notes = allNotes().filter((n) => ids.includes(n.note.id))
   // Selecting a note makes its duration the one used for new notes (as in MuseScore).
   setEditor({ selection: ids, ...(notes.length === 1 ? { inputDuration: notes[0].note.duration } : {}) })
+  if (notes.length === 1) preview(notes[0].note.pitch)
 }
 
 export const clearSelection = () => setEditor({ selection: [], chordEdit: null })
@@ -40,11 +43,15 @@ export function insertNote(voiceId: string, start: Tick, pitch: Pitch): NoteId {
   const id = nanoid()
   dispatch({ type: 'insertNote', voiceId, start, duration: editor().inputDuration, pitch, id })
   setEditor({ selection: [id] })
+  preview(pitch)
   return id
 }
 
 export function movePitch(noteId: NoteId, pitch: Pitch) {
+  const current = allNotes().find((n) => n.note.id === noteId)?.note.pitch
+  if (current && current.step === pitch.step && current.alter === pitch.alter && current.octave === pitch.octave) return
   dispatch({ type: 'moveNote', noteId, pitch })
+  preview(pitch)
 }
 
 /** Sets the input duration, and applies it to the selected notes. */
@@ -104,6 +111,13 @@ export function setChordSymbol(tick: Tick, text: string): boolean {
 export function nextBeat(tick: Tick): Tick | null {
   const next = firstBeatFrom(score(), tick + 1)
   return next < scoreLength(score()) ? next : null
+}
+
+/** Plays from the selected note (or the start), or stops if playing. */
+export function togglePlay() {
+  if (usePlaybackStore.getState().status !== 'stopped') return stop()
+  const [first] = selectedNotes().sort((a, b) => a.start - b.start)
+  void play(score(), first?.start ?? 0)
 }
 
 export const undo = () => useScoreStore.temporal.getState().undo()

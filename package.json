@@ -1,7 +1,13 @@
 {
-  "name": "harmony",
+  "name": "harmony-explorer",
   "private": true,
   "version": "0.0.0",
+  "description": "Explore vocal harmony lines for bluegrass songs",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gromgull/harmony-explorer.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

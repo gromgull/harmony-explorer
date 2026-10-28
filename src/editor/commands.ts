@@ -7,7 +7,7 @@ import type { HarmonyRole } from '@/harmony/trio'
 import { play, preview, stop } from '@/playback/player'
 import { useEditorStore } from '@/store/editor'
 import { usePlaybackStore } from '@/store/playback'
-import { useScoreStore } from '@/store/score'
+import { beginTransaction, commitTransaction, useScoreStore } from '@/store/score'
 
 // Every user action goes through these, whether it comes from the mouse,
 // the toolbar or the keyboard.
@@ -38,7 +38,7 @@ export function select(ids: NoteId[]) {
   if (notes.length === 1) preview(notes[0].note.pitch)
 }
 
-export const clearSelection = () => setEditor({ selection: [], chordEdit: null })
+export const clearSelection = () => setEditor({ selection: [], chordEdit: null, lyricEdit: null })
 
 export function insertNote(voiceId: string, start: Tick, pitch: Pitch): NoteId {
   const id = nanoid()
@@ -132,6 +132,52 @@ export function setHarmony(role: HarmonyRole, enabled: boolean) {
 
 export function regenerate(voiceId: string, highBaritone?: boolean) {
   dispatch({ type: 'regenerate', voiceId, highBaritone })
+}
+
+// ---- lyrics (lead only; the harmony parts sing the same words) ----
+
+const leadNotes = () => score().voices.find((v) => v.role === 'lead')?.notes ?? []
+
+/** Opens the lyric input on a lead note, or on the selected one. */
+export function openLyricEdit(noteId?: NoteId) {
+  const notes = leadNotes()
+  const id = noteId ?? editor().selection.find((s) => notes.some((n) => n.id === s)) ?? notes[0]?.id
+  if (id) setEditor({ lyricEdit: { noteId: id }, chordEdit: null, selection: [id] })
+}
+
+export const closeLyricEdit = () => setEditor({ lyricEdit: null })
+
+/** The previous/next lead note, or null at either end. */
+export function lyricNeighbor(noteId: NoteId, direction: 1 | -1): NoteId | null {
+  const notes = leadNotes()
+  return notes[notes.findIndex((n) => n.id === noteId) + direction]?.id ?? null
+}
+
+/** Stores a syllable; `hyphen` means the word continues on the next note. */
+export function setLyric(noteId: NoteId, text: string, hyphen: boolean) {
+  const lyric = text.trim() ? text.trim() + (hyphen ? '-' : '') : undefined
+  const current = leadNotes().find((n) => n.id === noteId)?.lyric
+  if (lyric !== current) dispatch({ type: 'setLyric', noteId, lyric })
+}
+
+/**
+ * Spreads text like "A-maz-ing grace" over the notes from `noteId` on,
+ * one syllable per note ("_" leaves a note out). Returns the note after the last one used.
+ */
+export function pasteLyrics(noteId: NoteId, text: string): NoteId | null {
+  const syllables = text
+    .trim()
+    .split(/\s+/)
+    .flatMap((word) => word.split('-').map((s, i, all) => ({ text: s === '_' ? '' : s, hyphen: i < all.length - 1 })))
+  let id: NoteId | null = noteId
+  beginTransaction()
+  for (const s of syllables) {
+    if (!id) break
+    setLyric(id, s.text, s.hyphen)
+    id = lyricNeighbor(id, 1)
+  }
+  commitTransaction()
+  return id
 }
 
 export const undo = () => useScoreStore.temporal.getState().undo()

@@ -40,7 +40,7 @@ export type HitMap = {
     top: number
     bottom: number
     chordY: number // baseline of the chord symbols
-    staves: { voiceId: string; clef: Clef; topLineY: number; spacing: number }[]
+    staves: { voiceId: string; clef: Clef; topLineY: number; spacing: number; lyricY: number }[]
     measures: { index: number; start: Tick; end: Tick; x0: number; x1: number; ticks: [Tick, number][] }[]
   }[]
   notes: Map<NoteId, { x: number; y: number }[]>
@@ -262,6 +262,7 @@ export function renderScore(
           clef: score.voices[vi].clef,
           topLineY: s.getYForLine(0),
           spacing: s.getSpacingBetweenLines(),
+          lyricY: 0, // set once the line is complete
         }))
       }
       x += measureWidth
@@ -290,7 +291,10 @@ export function renderScore(
     system.top = cursorY
     system.bottom = cursorY + boxHeight
     system.chordY = chordY + dy
-    system.staves.forEach((s) => (s.topLineY += dy))
+    system.staves.forEach((s, vi) => {
+      s.topLineY += dy
+      s.lyricY = lyricY[vi] + dy
+    })
     for (const n of notes) hit.notes.set(n.id, [...(hit.notes.get(n.id) ?? []), { x: n.x, y: n.y + dy }])
     hit.systems.push(system)
     cursorY += boxHeight + SYSTEM_GAP

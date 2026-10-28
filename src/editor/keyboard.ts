@@ -15,6 +15,7 @@ const BINDINGS: Binding[] = [
   { key: 'ArrowDown', run: () => cmd.transposeSelection(-1) },
   { key: 'ArrowLeft', run: () => cmd.selectAdjacent(-1) },
   { key: 'ArrowRight', run: () => cmd.selectAdjacent(1) },
+  { key: 'l', mod: true, run: () => cmd.openLyricEdit() },
   { key: 'z', mod: true, run: cmd.undo },
   { key: 'z', mod: true, shift: true, run: cmd.redo },
   { key: 'y', mod: true, run: cmd.redo },

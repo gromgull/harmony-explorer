@@ -6,12 +6,14 @@ type EditorStore = {
   selection: NoteId[]
   inputDuration: Tick // duration of newly inserted notes
   chordEdit: { tick: Tick } | null // open chord symbol input
+  lyricEdit: { noteId: NoteId } | null // open lyric input
 }
 
 export const useEditorStore = create<EditorStore>()(() => ({
   selection: [],
   inputDuration: TPQ,
   chordEdit: null,
+  lyricEdit: null,
 }))
 
 if (import.meta.env.DEV && typeof window !== 'undefined') Object.assign(window, { editorStore: useEditorStore })

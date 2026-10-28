@@ -31,7 +31,7 @@ export default function App() {
       </header>
       <Toolbar />
       <p className="text-muted-foreground -mt-2 text-xs leading-6">
-        Click to add a note, drag a note to change its pitch, click above the staff for chords. <Kbd>3</Kbd>–<Kbd>6</Kbd>{' '}
+        Click to add notes, drag to change pitch. Click above the staff for chords, below the lead for lyrics. <Kbd>3</Kbd>–<Kbd>6</Kbd>{' '}
         duration · <Kbd>.</Kbd> dot · <Kbd>↑</Kbd>
         <Kbd>↓</Kbd> semitone · <Kbd>←</Kbd>
         <Kbd>→</Kbd> select · <Kbd>Del</Kbd> delete · <Kbd>⌘Z</Kbd> undo · <Kbd>Space</Kbd> play

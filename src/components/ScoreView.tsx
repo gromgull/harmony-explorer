@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChordInput } from '@/components/ChordInput'
+import { LyricInput } from '@/components/LyricInput'
 import { PlaybackCursor } from '@/components/PlaybackCursor'
 import * as cmd from '@/editor/commands'
-import { locate, noteAt, yForIndex, type Target } from '@/editor/hittest'
+import { locate, lyricAnchor, noteAt, yForIndex, type Target } from '@/editor/hittest'
 import { fontsReady } from '@/engrave/fonts'
 import { interpolateX, topLineIndex } from '@/engrave/geometry'
 import { renderScore, SELECTED, type HitMap } from '@/engrave/render'
@@ -25,6 +26,7 @@ export function ScoreView({ score }: { score: Score }) {
   const [dragging, setDragging] = useState(false)
   const selection = useEditorStore((s) => s.selection)
   const chordEdit = useEditorStore((s) => s.chordEdit)
+  const lyricEdit = useEditorStore((s) => s.lyricEdit)
 
   useEffect(() => {
     fontsReady.then(() => setReady(true))
@@ -74,6 +76,10 @@ export function ScoreView({ score }: { score: Score }) {
       cmd.openChordEdit(target.tick)
       return
     }
+    if (target.region === 'lyric') {
+      cmd.openLyricEdit(target.noteId)
+      return
+    }
     // Insert and keep dragging to adjust the pitch, all in one undo step.
     startDrag(e, '', target.pitch, target.staff.spacing)
     drag.current!.noteId = cmd.insertNote(target.voiceId, target.tick, target.pitch)
@@ -103,6 +109,9 @@ export function ScoreView({ score }: { score: Score }) {
     commitTransaction()
   }
 
+  const lead = score.voices.find((v) => v.role === 'lead')
+  const lyricPos = lyricEdit && hit && lead ? lyricAnchor(hit, lyricEdit.noteId, lead.id) : null
+
   const chordPos = (() => {
     if (!chordEdit || !hit) return null
     for (const s of hit.systems) {
@@ -120,7 +129,10 @@ export function ScoreView({ score }: { score: Score }) {
           className="absolute inset-0"
           width={hit.width}
           height={hit.height}
-          style={{ cursor: overNote || dragging ? 'ns-resize' : 'default', touchAction: 'none' }}
+          style={{
+            cursor: overNote || dragging ? 'ns-resize' : hover?.region === 'lyric' ? 'text' : 'default',
+            touchAction: 'none',
+          }}
           onPointerDown={onPointerDown}
           // Keep focus where it is, e.g. in a chord input that this click opens.
           onMouseDown={(e) => e.preventDefault()}
@@ -134,11 +146,15 @@ export function ScoreView({ score }: { score: Score }) {
         </svg>
       )}
       {chordEdit && chordPos && <ChordInput key={chordEdit.tick} score={score} tick={chordEdit.tick} {...chordPos} />}
+      {lyricEdit && lyricPos && <LyricInput key={lyricEdit.noteId} score={score} noteId={lyricEdit.noteId} {...lyricPos} />}
     </div>
   )
 }
 
 function Ghost({ target }: { target: Target }) {
+  if (target.region === 'lyric') {
+    return <line x1={target.x - 14} x2={target.x + 14} y1={target.y + 4} y2={target.y + 4} stroke={SELECTED} strokeWidth={1.5} opacity={0.5} />
+  }
   if (target.region === 'chord') {
     return (
       <g opacity={0.5}>

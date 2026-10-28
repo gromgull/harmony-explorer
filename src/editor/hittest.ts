@@ -23,7 +23,9 @@ export type StaffTarget = {
 
 export type ChordTarget = { region: 'chord'; tick: Tick; x: number; y: number }
 
-export type Target = StaffTarget | ChordTarget
+export type LyricTarget = { region: 'lyric'; noteId: NoteId; x: number; y: number }
+
+export type Target = StaffTarget | ChordTarget | LyricTarget
 
 /** The y of a diatonic position on a staff. */
 export const yForIndex = (staff: Staff, index: number) =>
@@ -64,6 +66,19 @@ export function locate(hit: HitMap, score: Score, x: number, y: number): Target 
   const staff = system.staves.reduce((best, s) =>
     Math.abs(y - (s.topLineY + 2 * s.spacing)) < Math.abs(y - (best.topLineY + 2 * best.spacing)) ? s : best,
   )
+  // Below the lead staff, the lyric line of the nearest note.
+  const lead = score.voices.find((v) => v.role === 'lead')
+  if (staff.voiceId === lead?.id && y > staff.topLineY + 4 * staff.spacing + staff.spacing * 1.5) {
+    const ids = new Set(lead.notes.map((n) => n.id))
+    let best: LyricTarget | null = null
+    for (const [noteId, heads] of hit.notes) {
+      const h = heads[0] // a lyric belongs to the first piece of a tied note
+      if (!ids.has(noteId) || h.y < system.top || h.y > system.bottom) continue
+      if (!best || Math.abs(h.x - x) < Math.abs(best.x - x)) best = { region: 'lyric', noteId, x: h.x, y: staff.lyricY }
+    }
+    if (best) return best
+  }
+
   const top = topLineIndex(staff.clef)
   const index = Math.max(top - 8 - LEDGER_LIMIT, Math.min(top + LEDGER_LIMIT, indexForY(staff, y)))
   const snapped = snapTick(system, x, EIGHTH)
@@ -90,4 +105,13 @@ export function noteAt(hit: HitMap, x: number, y: number): NoteId | null {
     }
   }
   return best?.id ?? null
+}
+
+/** Where the lyric of a note is written: its first notehead's x, on its staff's lyric line. */
+export function lyricAnchor(hit: HitMap, noteId: NoteId, voiceId: string) {
+  const head = hit.notes.get(noteId)?.[0]
+  if (!head) return null
+  const system = hit.systems.find((s) => head.y >= s.top && head.y <= s.bottom)
+  const staff = system?.staves.find((s) => s.voiceId === voiceId)
+  return staff ? { x: head.x, y: staff.lyricY } : null
 }

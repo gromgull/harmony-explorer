@@ -150,7 +150,7 @@ export function emptyScore(): Score {
     key: { tonic: { step: 'G', alter: 0 }, mode: 'major' },
     tempo: 100,
     pickup: 0,
-    measureCount: 4,
+    measureCount: 6,
     chords: [],
     voices: [{ id: 'lead', role: 'lead', name: 'Lead', clef: 'treble', notes: [], source: { kind: 'manual' } }],
   }

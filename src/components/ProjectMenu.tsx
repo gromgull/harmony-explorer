@@ -1,4 +1,4 @@
-import { Copy, Menu, Music, Plus, Trash2 } from 'lucide-react'
+import { Check, Copy, Link, Menu, Music, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import {
   AlertDialog,
@@ -27,16 +27,18 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { emptyScore, EXAMPLES } from '@/model/sample'
 import { createProject, deleteProject, duplicateProject, openProject, useProjectsStore } from '@/store/projects'
+import { shareLink } from '@/store/share'
 
 export function ProjectMenu() {
   const projects = useProjectsStore((s) => s.projects)
   const currentId = useProjectsStore((s) => s.currentId)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [copied, setCopied] = useState(false)
   const current = projects.find((p) => p.id === currentId)
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu onOpenChange={() => setCopied(false)}>
         <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Songs" />}>
           <Menu />
         </DropdownMenuTrigger>
@@ -57,6 +59,16 @@ export function ProjectMenu() {
           </DropdownMenuItem>
           <DropdownMenuItem onClick={duplicateProject}>
             <Copy /> Duplicate
+          </DropdownMenuItem>
+          {/* Stays open to confirm the copy. */}
+          <DropdownMenuItem
+            closeOnClick={false}
+            onClick={async () => {
+              await navigator.clipboard.writeText(await shareLink())
+              setCopied(true)
+            }}
+          >
+            {copied ? <Check /> : <Link />} {copied ? 'Link copied' : 'Copy share link'}
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>

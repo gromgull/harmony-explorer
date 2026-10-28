@@ -34,7 +34,14 @@ export type Voice = {
   name: string
   clef: Clef
   notes: Note[] // sorted by start, never overlapping; gaps are rests
-  source: { kind: 'manual' } | { kind: 'generated'; algorithm: string; seed?: number }
+  source: { kind: 'manual' } | HarmonySource
+}
+
+export type HarmonySource = {
+  kind: 'generated'
+  algorithm: 'trio'
+  highBaritone?: boolean
+  edited?: boolean // edited by hand: no longer regenerated automatically
 }
 
 export type Chord = {

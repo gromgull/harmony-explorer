@@ -143,3 +143,10 @@
   font-weight: 400;
   fill: currentColor;
 }
+
+.score .voice-name {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  fill: currentColor;
+}

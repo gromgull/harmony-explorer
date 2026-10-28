@@ -2,6 +2,7 @@ import { ScoreView } from '@/components/ScoreView'
 import { useEffect } from 'react'
 import { Toolbar } from '@/components/Toolbar'
 import { Transport } from '@/components/Transport'
+import { VoicesPanel } from '@/components/VoicesPanel'
 import { warmUp } from '@/playback/player'
 import { useKeyboard } from '@/editor/keyboard'
 import { useScoreStore } from '@/store/score'
@@ -35,6 +36,7 @@ export default function App() {
         <Kbd>↓</Kbd> semitone · <Kbd>←</Kbd>
         <Kbd>→</Kbd> select · <Kbd>Del</Kbd> delete · <Kbd>⌘Z</Kbd> undo · <Kbd>Space</Kbd> play
       </p>
+      <VoicesPanel />
       <ScoreView score={score} />
     </main>
   )

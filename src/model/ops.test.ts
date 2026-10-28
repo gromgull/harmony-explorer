@@ -93,3 +93,25 @@ describe('setChord with an off-beat pickup', () => {
     expect(s.chords.map((c) => c.start)).toEqual([TPQ / 2, TPQ * 2.5])
   })
 })
+
+describe('harmony voices', () => {
+  it('are added in staff order and frozen by hand edits', () => {
+    let s = applyOp(empty(), { type: 'addHarmony', role: 'bass' })
+    s = applyOp(s, { type: 'addHarmony', role: 'tenor' })
+    s = applyOp(s, { type: 'addHarmony', role: 'baritone' })
+    expect(s.voices.map((v) => v.role)).toEqual(['tenor', 'lead', 'baritone', 'bass'])
+    expect(s.voices.find((v) => v.role === 'bass')?.clef).toBe('bass')
+
+    s = applyOp(s, { type: 'insertNote', voiceId: 'tenor', start: 0, duration: TPQ, pitch: parsePitch('E4') })
+    expect(s.voices[0].source).toMatchObject({ kind: 'generated', edited: true })
+    s = applyOp(s, { type: 'regenerate', voiceId: 'tenor' })
+    expect(s.voices[0].source).toEqual({ kind: 'generated', algorithm: 'trio', highBaritone: undefined })
+  })
+
+  it('put a high baritone above the tenor', () => {
+    let s = applyOp(empty(), { type: 'addHarmony', role: 'tenor' })
+    s = applyOp(s, { type: 'addHarmony', role: 'baritone' })
+    s = applyOp(s, { type: 'regenerate', voiceId: 'baritone', highBaritone: true })
+    expect(s.voices.map((v) => v.role)).toEqual(['baritone', 'tenor', 'lead'])
+  })
+})

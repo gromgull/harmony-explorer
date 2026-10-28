@@ -15,6 +15,7 @@ type PlaybackStore = {
   tick: Tick | null // playback cursor
   voiceSound: VoiceSound
   backing: boolean // boom-chuck guitar on the chords
+  muted: string[] // voice ids
 }
 
 export const usePlaybackStore = create<PlaybackStore>()(() => ({
@@ -22,6 +23,7 @@ export const usePlaybackStore = create<PlaybackStore>()(() => ({
   tick: null,
   voiceSound: 'acoustic_grand_piano',
   backing: true,
+  muted: [],
 }))
 
 if (import.meta.env.DEV && typeof window !== 'undefined') Object.assign(window, { playbackStore: usePlaybackStore })

@@ -49,6 +49,11 @@ export function setBacking(backing: boolean) {
   setState({ backing })
 }
 
+export function toggleMute(voiceId: string) {
+  const { muted } = usePlaybackStore.getState()
+  setState({ muted: muted.includes(voiceId) ? muted.filter((id) => id !== voiceId) : [...muted, voiceId] })
+}
+
 /** Plays a single note, e.g. while editing. Silent until the sound has loaded. */
 export function preview(pitch: Pitch) {
   if (usePlaybackStore.getState().status === 'playing') return
@@ -80,6 +85,8 @@ export async function play(score: Score, from: Tick = 0) {
     const horizon = ctx.currentTime + LOOKAHEAD
     while (next < events.length && timeOf(events[next].tick) < horizon) {
       const e: PlaybackEvent = events[next++]
+      // Read on every pass, so muting works while playing.
+      if (e.voiceId && usePlaybackStore.getState().muted.includes(e.voiceId)) continue
       const inst = e.part === 'voice' ? voice : guitar!
       // A small spread per string makes the strum sound strummed.
       const spread = (e.strumIndex ?? 0) * 0.012

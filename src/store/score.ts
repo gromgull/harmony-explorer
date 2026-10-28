@@ -1,5 +1,6 @@
 import { temporal } from 'zundo'
 import { create } from 'zustand'
+import { syncHarmonies } from '@/harmony/sync'
 import { applyOp, type EditOp } from '@/model/ops'
 import { amazingGrace } from '@/model/sample'
 import type { Score } from '@/model/types'
@@ -13,7 +14,7 @@ export const useScoreStore = create<ScoreStore>()(
   temporal(
     (set) => ({
       score: amazingGrace(),
-      dispatch: (op) => set((s) => ({ score: applyOp(s.score, op) })),
+      dispatch: (op) => set((s) => ({ score: syncHarmonies(applyOp(s.score, op)) })),
     }),
     { partialize: (s) => ({ score: s.score }), limit: 200 },
   ),

@@ -21,6 +21,10 @@ import { layoutScore, type MeasureLayout, type Tickable } from './layout'
 
 // ---- geometry ----
 const MARGIN_X = 16
+const SHORT_NAMES: Record<string, string> = { tenor: 'T.', lead: 'L.', baritone: 'Bar.', bass: 'B.' }
+
+/** Room for voice names left of the staves; only needed with several voices. */
+const labelWidth = (score: Score, firstLine: boolean) => (score.voices.length < 2 ? 0 : firstLine ? 64 : 34)
 const STAFF_HEIGHT = 80 // stave incl. VexFlow's internal padding
 const LYRIC_SPACE = 34 // below each staff
 const SYSTEM_GAP = 28
@@ -99,7 +103,7 @@ function modifierWidth(score: Score, withTime: boolean) {
 
 /** Greedily packs measures into lines; returns the measure indices per line. */
 function breakLines(score: Score, measures: MeasureLayout[], width: number) {
-  const usable = width - 2 * MARGIN_X
+  const usable = width - 2 * MARGIN_X - labelWidth(score, true)
   const mins = measures.map((m) => minMeasureWidth(score, m) * SPREAD)
   const lines: number[][] = []
   let line: number[] = []
@@ -155,7 +159,7 @@ export function renderScore(
   lines.forEach((line, lineIndex) => {
     const group = ctx.openGroup('system')
     const isLast = lineIndex === lines.length - 1
-    const usable = width - 2 * MARGIN_X - modifierWidth(score, lineIndex === 0)
+    const usable = width - 2 * MARGIN_X - labelWidth(score, lineIndex === 0) - modifierWidth(score, lineIndex === 0)
     const natural = line.reduce((sum, i) => sum + mins[i], 0)
     // Stretch to the full width, except a short last line.
     const scale = isLast && natural < usable * 0.6 ? 1 : usable / natural
@@ -169,7 +173,7 @@ export function renderScore(
     const lyrics: { text: string; x: number; vi: number }[] = []
     let chordY = Infinity
     const lyricY = score.voices.map(() => -Infinity)
-    let x = MARGIN_X
+    let x = MARGIN_X + labelWidth(score, lineIndex === 0)
 
     line.forEach((mi, posInLine) => {
       const m = measures[mi]
@@ -246,6 +250,12 @@ export function renderScore(
       }
 
       system.measures.push({ index: m.index, start: m.start, end: m.end, x0: x, x1: x + measureWidth, ticks })
+      if (posInLine === 0 && voiceCount > 1) {
+        staves.forEach((s, vi) => {
+          const name = lineIndex === 0 ? score.voices[vi].name : (SHORT_NAMES[score.voices[vi].role] ?? '')
+          svgText(group, name, x - 12, s.getYForLine(2) + 4, 'voice-name', 'end')
+        })
+      }
       if (posInLine === 0) {
         system.staves = staves.map((s, vi) => ({
           voiceId: score.voices[vi].id,

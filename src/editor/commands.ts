@@ -3,6 +3,7 @@ import { chordText, parseChordSymbol } from '@/model/chord'
 import { stepChromatic } from '@/model/pitch'
 import { firstBeatFrom, scoreLength } from '@/model/time'
 import { EIGHTH, TPQ, type Note, type NoteId, type Pitch, type Tick } from '@/model/types'
+import type { HarmonyRole } from '@/harmony/trio'
 import { play, preview, stop } from '@/playback/player'
 import { useEditorStore } from '@/store/editor'
 import { usePlaybackStore } from '@/store/playback'
@@ -118,6 +119,19 @@ export function togglePlay() {
   if (usePlaybackStore.getState().status !== 'stopped') return stop()
   const [first] = selectedNotes().sort((a, b) => a.start - b.start)
   void play(score(), first?.start ?? 0)
+}
+
+export function setHarmony(role: HarmonyRole, enabled: boolean) {
+  if (enabled) dispatch({ type: 'addHarmony', role })
+  else {
+    const voice = score().voices.find((v) => v.role === role)
+    if (voice) dispatch({ type: 'removeVoice', voiceId: voice.id })
+    setEditor({ selection: [] })
+  }
+}
+
+export function regenerate(voiceId: string, highBaritone?: boolean) {
+  dispatch({ type: 'regenerate', voiceId, highBaritone })
 }
 
 export const undo = () => useScoreStore.temporal.getState().undo()

@@ -12,7 +12,24 @@ import {
   type Tick,
   type TimeSignature,
   type Voice,
+  type VoiceRole,
 } from './types'
+
+const ROLE_NAMES: Record<VoiceRole, string> = { tenor: 'Tenor', lead: 'Lead', baritone: 'Baritone', bass: 'Bass' }
+
+/** Staves top to bottom; a high baritone sits above the tenor. */
+function sortVoices(voices: Draft<Voice>[]) {
+  const rank = (v: Voice) =>
+    v.role === 'baritone' && v.source.kind === 'generated' && v.source.highBaritone
+      ? -1
+      : ['tenor', 'lead', 'baritone', 'bass'].indexOf(v.role)
+  voices.sort((a, b) => rank(a) - rank(b))
+}
+
+/** Hand edits freeze a generated voice. */
+function markEdited(voice: Draft<Voice>) {
+  if (voice.source.kind === 'generated') voice.source.edited = true
+}
 
 export type EditOp =
   | { type: 'insertNote'; voiceId: string; start: Tick; duration: Tick; pitch: Pitch; id?: NoteId }
@@ -27,6 +44,9 @@ export type EditOp =
   | { type: 'setPickup'; pickup: Tick }
   | { type: 'setTempo'; tempo: number }
   | { type: 'setTitle'; title: string }
+  | { type: 'addHarmony'; role: Exclude<VoiceRole, 'lead'> }
+  | { type: 'removeVoice'; voiceId: string }
+  | { type: 'regenerate'; voiceId: string; highBaritone?: boolean }
 
 const snap = (t: Tick, grid: Tick) => Math.round(t / grid) * grid
 
@@ -70,6 +90,7 @@ function apply(score: Draft<Score>, op: EditOp) {
     case 'insertNote': {
       const voice = score.voices.find((v) => v.id === op.voiceId)
       if (!voice) return
+      markEdited(voice)
       const start = snap(op.start, EIGHTH)
       const duration = Math.max(EIGHTH, snap(op.duration, EIGHTH))
       placeNote(voice, { id: op.id ?? nanoid(), start, duration, pitch: op.pitch }, scoreLength(score))
@@ -78,6 +99,7 @@ function apply(score: Draft<Score>, op: EditOp) {
     case 'moveNote': {
       const found = findNote(score, op.noteId)
       if (!found) return
+      markEdited(found.voice)
       found.note.pitch = op.pitch
       if (op.start !== undefined) {
         const note = { ...found.note, start: snap(op.start, EIGHTH) }
@@ -88,12 +110,16 @@ function apply(score: Draft<Score>, op: EditOp) {
     case 'setDuration': {
       const found = findNote(score, op.noteId)
       if (!found) return
+      markEdited(found.voice)
       const note = { ...found.note, duration: Math.max(EIGHTH, snap(op.duration, EIGHTH)) }
       placeNote(found.voice, note, scoreLength(score))
       return
     }
     case 'deleteNote': {
-      for (const voice of score.voices) voice.notes = voice.notes.filter((n) => n.id !== op.noteId)
+      for (const voice of score.voices) {
+        if (voice.notes.some((n) => n.id === op.noteId)) markEdited(voice)
+        voice.notes = voice.notes.filter((n) => n.id !== op.noteId)
+      }
       return
     }
     case 'setLyric': {
@@ -145,6 +171,31 @@ function apply(score: Draft<Score>, op: EditOp) {
     case 'setTitle':
       score.title = op.title
       return
+    case 'addHarmony': {
+      if (score.voices.some((v) => v.role === op.role)) return
+      const lead = score.voices.find((v) => v.role === 'lead')
+      score.voices.push({
+        id: op.role,
+        role: op.role,
+        name: ROLE_NAMES[op.role],
+        clef: op.role === 'bass' ? 'bass' : (lead?.clef ?? 'treble'),
+        notes: [], // filled in by the harmony generator
+        source: { kind: 'generated', algorithm: 'trio' },
+      })
+      sortVoices(score.voices)
+      return
+    }
+    case 'removeVoice':
+      score.voices = score.voices.filter((v) => v.id !== op.voiceId || v.role === 'lead')
+      return
+    case 'regenerate': {
+      const voice = score.voices.find((v) => v.id === op.voiceId)
+      if (!voice || voice.role === 'lead') return
+      const previous = voice.source.kind === 'generated' ? voice.source.highBaritone : undefined
+      voice.source = { kind: 'generated', algorithm: 'trio', highBaritone: op.highBaritone ?? previous }
+      sortVoices(score.voices)
+      return
+    }
   }
 }
 

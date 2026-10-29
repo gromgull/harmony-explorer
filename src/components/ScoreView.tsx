@@ -14,7 +14,14 @@ import type { NoteId, Pitch, Score } from '@/model/types'
 import { useEditorStore } from '@/store/editor'
 import { beginTransaction, commitTransaction } from '@/store/score'
 
-type Drag = { noteId: NoteId; startY: number; origin: Pitch; spacing: number }
+type Drag = {
+  noteId: NoteId
+  startY: number
+  origin: Pitch
+  spacing: number
+  moved: boolean // the pitch changed at some point during the drag
+  deselectOnRelease: boolean // a click on an already selected note toggles it off
+}
 
 export function ScoreView({ score }: { score: Score }) {
   const wrapper = useRef<HTMLDivElement>(null)
@@ -53,10 +60,10 @@ export function ScoreView({ score }: { score: Score }) {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
   }
 
-  const startDrag = (e: React.PointerEvent, noteId: NoteId, origin: Pitch, spacing: number) => {
+  const startDrag = (e: React.PointerEvent, noteId: NoteId, origin: Pitch, spacing: number, deselectOnRelease = false) => {
     e.currentTarget.setPointerCapture(e.pointerId)
     beginTransaction()
-    drag.current = { noteId, startY: point(e).y, origin, spacing }
+    drag.current = { noteId, startY: point(e).y, origin, spacing, moved: false, deselectOnRelease }
     setDragging(true)
     setHover(null)
   }
@@ -67,9 +74,10 @@ export function ScoreView({ score }: { score: Score }) {
     const spacing = hit.systems[0]?.staves[0]?.spacing ?? 10
     const noteId = noteAt(hit, x, y)
     if (noteId) {
-      cmd.select([noteId])
+      const alreadySelected = selection.length === 1 && selection[0] === noteId
+      if (!alreadySelected) cmd.select([noteId])
       const note = score.voices.flatMap((v) => v.notes).find((n) => n.id === noteId)!
-      startDrag(e, noteId, note.pitch, spacing)
+      startDrag(e, noteId, note.pitch, spacing, alreadySelected)
       return
     }
     const target = locate(hit, score, x, y)
@@ -96,6 +104,7 @@ export function ScoreView({ score }: { score: Score }) {
       const index = diatonicIndex(d.origin) + steps
       const step = fromDiatonicIndex(index, 0).step
       const pitch = steps === 0 ? d.origin : fromDiatonicIndex(index, keyAlterations(score.key)[step])
+      if (steps !== 0) d.moved = true
       cmd.movePitch(d.noteId, pitch)
       return
     }
@@ -105,10 +114,12 @@ export function ScoreView({ score }: { score: Score }) {
   }
 
   const endDrag = () => {
-    if (!drag.current) return
+    const d = drag.current
+    if (!d) return
     drag.current = null
     setDragging(false)
     commitTransaction()
+    if (d.deselectOnRelease && !d.moved) cmd.clearSelection()
   }
 
   const lead = score.voices.find((v) => v.role === 'lead')

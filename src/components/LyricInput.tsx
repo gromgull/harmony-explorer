@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { closeLyricEdit, lyricNeighbor, openLyricEdit, pasteLyrics, setLyric } from '@/editor/commands'
 import type { NoteId, Score } from '@/model/types'
 
@@ -15,6 +15,15 @@ export function LyricInput({ score, noteId, caret, x, y }: Props) {
   const [text, setText] = useState(existing.replace(/-$/, ''))
   const hyphen = useRef(existing.endsWith('-'))
   const closed = useRef(false) // unmounting blurs the input; don't save again then
+  const latest = useRef(text) // for saving on unmount
+
+  // Clicks on the score keep focus here (no blur), then open something else: save on the way out.
+  useEffect(
+    () => () => {
+      if (!closed.current) setLyric(noteId, latest.current, hyphen.current)
+    },
+    [noteId],
+  )
 
   const moveTo = (id: NoteId | null, caretAt?: 'start' | 'end') => {
     closed.current = true
@@ -33,7 +42,10 @@ export function LyricInput({ score, noteId, caret, x, y }: Props) {
       }}
       value={text}
       spellCheck={false}
-      onChange={(e) => setText(e.target.value.replace(/[\s_-]/g, ''))}
+      onChange={(e) => {
+        latest.current = e.target.value.replace(/[\s_-]/g, '')
+        setText(latest.current)
+      }}
       onKeyDown={(e) => {
         const next = () => lyricNeighbor(noteId, 1)
         const { selectionStart, selectionEnd } = e.currentTarget

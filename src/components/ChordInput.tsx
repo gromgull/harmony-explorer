@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { closeChordEdit, nextBeat, openChordEdit, setChordSymbol } from '@/editor/commands'
 import { chordText } from '@/model/chord'
 import type { Score, Tick } from '@/model/types'
@@ -12,6 +12,15 @@ export function ChordInput({ score, tick, x, y }: Props) {
   const [text, setText] = useState(existing ? chordText(existing) : '')
   const [invalid, setInvalid] = useState(false)
   const closed = useRef(false) // unmounting blurs the input; don't save again then
+  const latest = useRef(text) // for saving on unmount
+
+  // Clicks on the score keep focus here (no blur), then open something else: save on the way out.
+  useEffect(
+    () => () => {
+      if (!closed.current) setChordSymbol(tick, latest.current)
+    },
+    [tick],
+  )
 
   const close = () => {
     closed.current = true
@@ -32,6 +41,7 @@ export function ChordInput({ score, tick, x, y }: Props) {
       spellCheck={false}
       onChange={(e) => {
         setText(e.target.value)
+        latest.current = e.target.value
         setInvalid(false)
       }}
       onKeyDown={(e) => {

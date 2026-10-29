@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emptyScore } from '@/model/sample'
+import { emptyScore, EXAMPLES } from '@/model/sample'
+
+const EXAMPLE_TITLES = EXAMPLES.map((e) => e.title)
 
 vi.mock('@/playback/player', () => ({ stop: () => {} }))
 
@@ -28,7 +30,7 @@ describe('projects', () => {
   it('seeds the examples and opens Amazing Grace first', async () => {
     const p = await load()
     p.bootstrap()
-    expect(p.useProjectsStore.getState().projects.map((x) => x.title)).toEqual(['Amazing Grace', 'Keep on the Sunny Side'])
+    expect(p.useProjectsStore.getState().projects.map((x) => x.title)).toEqual(EXAMPLE_TITLES)
     expect(p.useScoreStore.getState().score.title).toBe('Amazing Grace')
   })
 
@@ -44,8 +46,7 @@ describe('projects', () => {
     expect(reloaded.useScoreStore.getState().score.title).toBe('My song')
     expect(reloaded.useProjectsStore.getState().projects.map((x) => x.title)).toEqual([
       'My song',
-      'Amazing Grace',
-      'Keep on the Sunny Side',
+      ...EXAMPLE_TITLES,
     ])
   })
 
@@ -66,6 +67,6 @@ describe('projects', () => {
     p.bootstrap()
     p.deleteProject(p.useProjectsStore.getState().currentId!)
     expect(p.useScoreStore.getState().score.title).toBe('Keep on the Sunny Side')
-    expect(p.useProjectsStore.getState().projects).toHaveLength(1)
+    expect(p.useProjectsStore.getState().projects).toHaveLength(EXAMPLES.length - 1)
   })
 })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { applyOp } from './ops'
 import { parsePitch } from './pitch'
-import { amazingGrace, keepOnTheSunnySide } from './sample'
+import { amazingGrace, buryMeBeneathTheWillow, keepOnTheSunnySide } from './sample'
 import { barTicks, measureBounds, scoreLength } from './time'
 import { TPQ, type Score } from './types'
 
@@ -77,7 +77,7 @@ describe('setChord', () => {
 })
 
 describe('samples', () => {
-  it.each([amazingGrace, keepOnTheSunnySide])('%o fills its last bar', (make) => {
+  it.each([amazingGrace, keepOnTheSunnySide, buryMeBeneathTheWillow])('%o fills its last bar', (make) => {
     const s = make()
     const last = s.voices[0].notes.at(-1)!
     const end = last.start + last.duration
@@ -90,6 +90,12 @@ describe('samples', () => {
     const s = keepOnTheSunnySide()
     const keep = s.voices[0].notes.find((n) => n.lyric === 'Keep')!
     expect(keep.start).toBe(s.pickup + 15 * barTicks(s.timeSignature))
+  })
+
+  it('starts the chorus of Bury Me Beneath the Willow on bar 9', () => {
+    const s = buryMeBeneathTheWillow()
+    const bury = s.voices[0].notes.find((n) => n.lyric === 'Bur-')!
+    expect(bury.start).toBe(s.pickup + 8 * barTicks(s.timeSignature))
   })
 })
 

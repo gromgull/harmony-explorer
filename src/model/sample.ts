@@ -141,6 +141,50 @@ export function keepOnTheSunnySide(): Score {
   }
 }
 
+/**
+ * Bury Me Beneath the Willow (traditional; Carter Family 1927), verse 1 and chorus.
+ * Melody and chords after the abcnotation.com transcription (rlwalker collection),
+ * transposed from D to G. A slur in the source becomes a note without a syllable.
+ */
+export function buryMeBeneathTheWillow(): Score {
+  const timeSignature = { beats: 4, beatUnit: 4 } as const
+  const pickup = EIGHTH
+  const notes = melody(
+    `D4:8:My
+     B4:q.:heart C5:8:is B4:q:sad B4:8:and A4:8
+     G4:q.:I A4:8:am G4:q:lone- E4:q:ly
+     D4:q:For G4:8:the A4:8:on- B4:8:ly B4:8:one C5:8:I B4:8
+     A4:w:love
+     B4:q.:When C5:8:shall B4:q:I B4:8:see A4:8:him
+     G4:q.:oh A4:8:no G4:q:nev- E4:q:er
+     B4:q.:'Til C5:8:we B4:8:meet D4:8:in A4:8:heav'n A4:8:a-
+     G4:w:bove
+
+     D5:q.:Bur- E5:8:y D5:q:me B4:8:be- A4:8
+     G4:q.:neath A4:8:the G4:q:wil- E4:q:low
+     D4:q:Un- G4:8:der A4:8:the B4:8:weep- B4:8:ing C5:8:wil- B4:8:low
+     A4:w:tree
+     D5:q.:So E5:8:he D5:q:may B4:8:know A4:8:where
+     G4:q.:I A4:8:am G4:q:sleep- E4:q:ing
+     B4:q.:And C5:8:per- B4:8:haps D4:8:he'll A4:8:weep A4:8:for
+     G4:w:me`,
+  )
+  const progression = ['G', 'C', 'G', 'D', 'G', 'C', 'D', 'G']
+  return {
+    version: 1,
+    title: 'Bury Me Beneath the Willow',
+    timeSignature,
+    key: { tonic: { step: 'G', alter: 0 }, mode: 'major' },
+    tempo: 100,
+    pickup,
+    measureCount: 16,
+    chords: chords(pickup, barTicks(timeSignature), [...progression, ...progression]), // verse, chorus
+    voices: [
+      { id: 'lead', role: 'lead', name: 'Lead', clef: 'treble', notes, source: { kind: 'manual' } },
+    ],
+  }
+}
+
 /** A blank page: four empty bars of 4/4 in G. */
 export function emptyScore(): Score {
   return {
@@ -159,4 +203,5 @@ export function emptyScore(): Score {
 export const EXAMPLES = [
   { title: 'Amazing Grace', make: amazingGrace },
   { title: 'Keep on the Sunny Side', make: keepOnTheSunnySide },
+  { title: 'Bury Me Beneath the Willow', make: buryMeBeneathTheWillow },
 ]

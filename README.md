@@ -48,6 +48,10 @@ The code is organized as:
 - *Keep on the Sunny Side* (Ada Blenkhorn and J. Howard Entwisle, 1899), public domain.
   Melody and chords after the transcription on
   [abcnotation.com](https://abcnotation.com/tunePage?a=trillian.mit.edu/~jc/music/abc/mirror/mindspring.com/~thornton.rose/KeepOnTheSunnySide/0000).
+- *Bury Me Beneath the Willow* (traditional; recorded by the Carter Family in 1927), public domain.
+  Melody and chords after the transcription on
+  [abcnotation.com](https://abcnotation.com/tunePage?a=trillian.mit.edu/~jc/music/abc/mirror/gulfweb.net:34043/~rlwalker/abc/buryme/0000),
+  transposed from D to G.
 
 ## License
 

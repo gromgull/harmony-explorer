@@ -1,134 +1,77 @@
-import { Redo2, Undo2 } from 'lucide-react'
+import { CircleHelp, Redo2, Undo2 } from 'lucide-react'
 import { useStore } from 'zustand'
 import { DurationPalette } from '@/components/DurationPalette'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { keyName, parsePitchClass } from '@/model/pitch'
-import { barTicks } from '@/model/time'
-import { EIGHTH, type KeySignature } from '@/model/types'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { redo, undo } from '@/editor/commands'
 import { useScoreStore } from '@/store/score'
 
-const KEYS = ['C', 'G', 'D', 'A', 'E', 'B', 'F', 'Bb', 'Eb', 'Ab', 'Am', 'Em', 'Bm', 'F#m', 'Dm', 'Gm', 'Cm']
+const Kbd = ({ children }: { children: React.ReactNode }) => (
+  <kbd className="bg-muted rounded px-1 py-0.5 font-mono text-[11px]">{children}</kbd>
+)
 
-const parseKey = (name: string): KeySignature => {
-  const minor = name.endsWith('m')
-  return { tonic: parsePitchClass(minor ? name.slice(0, -1) : name), mode: minor ? 'minor' : 'major' }
-}
+const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+'
 
-const eighthsLabel = (n: number) => (n % 2 === 0 ? `${n / 2} beat${n === 2 ? '' : 's'}` : `${n / 2} beats`)
+// Keys joined by `range` read as "3–6"; otherwise they are alternatives.
+const SHORTCUTS: { keys: string[]; action: string; range?: boolean }[] = [
+  { keys: ['3', '6'], action: 'note duration', range: true },
+  { keys: ['.'], action: 'dot' },
+  { keys: ['↑', '↓'], action: 'semitone up / down' },
+  { keys: ['←', '→'], action: 'select previous / next' },
+  { keys: ['Del'], action: 'delete' },
+  { keys: [`${MOD}L`], action: 'lyrics for the selected note' },
+  { keys: [`${MOD}Z`], action: 'undo' },
+  { keys: [`${MOD}Y`, `${MOD}⇧Z`], action: 'redo' },
+  { keys: ['Esc'], action: 'clear selection' },
+  { keys: ['Space'], action: 'play / stop' },
+]
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Help() {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label className="text-muted-foreground text-xs">{label}</Label>
-      {children}
-    </div>
+    <Popover>
+      <PopoverTrigger render={<Button variant="ghost" size="icon" aria-label="Help" title="Help" />}>
+        <CircleHelp />
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 gap-3 text-xs">
+        <p>Click to add notes, drag to change pitch. Click above the staff for chords, below the lead for lyrics.</p>
+        <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5">
+          {SHORTCUTS.map(({ keys, action, range }) => (
+            <div key={action} className="contents">
+              <dt className="flex items-center gap-1 whitespace-nowrap">
+                {keys.map((k, i) => (
+                  <span key={k} className="contents">
+                    {range && i > 0 && '–'}
+                    <Kbd>{k}</Kbd>
+                  </span>
+                ))}
+              </dt>
+              <dd className="text-muted-foreground">{action}</dd>
+            </div>
+          ))}
+        </dl>
+      </PopoverContent>
+    </Popover>
   )
 }
 
+/** Note entry tools; song settings and voices live in the header. */
 export function Toolbar() {
-  const score = useScoreStore((s) => s.score)
-  const dispatch = useScoreStore((s) => s.dispatch)
   const canUndo = useStore(useScoreStore.temporal, (s) => s.pastStates.length > 0)
   const canRedo = useStore(useScoreStore.temporal, (s) => s.futureStates.length > 0)
 
-  const pickupOptions = Array.from({ length: barTicks(score.timeSignature) / EIGHTH }, (_, i) => i)
-  const pickupItems = pickupOptions.map((n) => ({ value: String(n * EIGHTH), label: n === 0 ? 'None' : eighthsLabel(n) }))
-
   return (
-    <div className="flex flex-wrap items-end gap-4">
-      <Field label="Key">
-        <Select
-          items={KEYS.map((k) => ({ value: k, label: k }))}
-          value={keyName(score.key)}
-          onValueChange={(v) => v && dispatch({ type: 'setKey', key: parseKey(v) })}
-        >
-          <SelectTrigger className="w-24">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {KEYS.map((k) => (
-              <SelectItem key={k} value={k}>
-                {k}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
-
-      <Field label="Time">
-        <Select
-          items={[{ value: '3', label: '3/4' }, { value: '4', label: '4/4' }]}
-          value={String(score.timeSignature.beats)}
-          onValueChange={(v) =>
-            v && dispatch({ type: 'setTimeSignature', timeSignature: { beats: Number(v) as 3 | 4, beatUnit: 4 } })
-          }
-        >
-          <SelectTrigger className="w-20">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="3">3/4</SelectItem>
-            <SelectItem value="4">4/4</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
-
-      <Field label="Pickup">
-        <Select
-          items={pickupItems}
-          value={String(score.pickup)}
-          onValueChange={(v) => v !== null && dispatch({ type: 'setPickup', pickup: Number(v) })}
-        >
-          <SelectTrigger className="w-28">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {pickupItems.map((p) => (
-              <SelectItem key={p.value} value={p.value}>
-                {p.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
-
-      <Field label="Bars">
-        <Input
-          type="number"
-          min={1}
-          max={200}
-          className="w-20"
-          value={score.measureCount}
-          onChange={(e) => e.target.value && dispatch({ type: 'setMeasureCount', measureCount: Number(e.target.value) })}
-        />
-      </Field>
-
-      <Field label="Tempo">
-        <Input
-          type="number"
-          min={20}
-          max={300}
-          className="w-20"
-          value={score.tempo}
-          onChange={(e) => e.target.value && dispatch({ type: 'setTempo', tempo: Number(e.target.value) })}
-        />
-      </Field>
-
-      <Field label="Note">
-        <DurationPalette />
-      </Field>
-
-      <div className="ml-auto flex gap-1">
+    <div className="flex items-center gap-4">
+      <DurationPalette />
+      <div className="flex gap-1">
         <Button variant="outline" size="icon" onClick={() => undo()} disabled={!canUndo} aria-label="Undo">
           <Undo2 />
         </Button>
         <Button variant="outline" size="icon" onClick={() => redo()} disabled={!canRedo} aria-label="Redo">
           <Redo2 />
         </Button>
+      </div>
+      <div className="ml-auto">
+        <Help />
       </div>
     </div>
   )

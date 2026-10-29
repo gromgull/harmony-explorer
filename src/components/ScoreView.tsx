@@ -126,7 +126,7 @@ export function ScoreView({ score }: { score: Score }) {
       <div ref={canvas} className="score" />
       {hit && (
         <svg
-          className="absolute inset-0"
+          className="absolute inset-0 print:hidden"
           width={hit.width}
           height={hit.height}
           style={{

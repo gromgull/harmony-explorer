@@ -6,6 +6,7 @@ import { Toolbar } from '@/components/Toolbar'
 import { Transport } from '@/components/Transport'
 import { VoicesPanel } from '@/components/VoicesPanel'
 import { warmUp } from '@/playback/player'
+import { clearSelection } from '@/editor/commands'
 import { useKeyboard } from '@/editor/keyboard'
 import { useScoreStore } from '@/store/score'
 
@@ -20,28 +21,40 @@ export default function App() {
   useEffect(() => {
     window.addEventListener('pointerdown', warmUp, { once: true })
     window.addEventListener('keydown', warmUp, { once: true })
+    // Selected notes are coloured; print them plain.
+    window.addEventListener('beforeprint', clearSelection)
     return () => {
       window.removeEventListener('pointerdown', warmUp)
       window.removeEventListener('keydown', warmUp)
+      window.removeEventListener('beforeprint', clearSelection)
     }
   }, [])
+  // Printing shows only the title and the score.
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
+    <main className="mx-auto flex max-w-6xl flex-col gap-6 p-6 print:max-w-none print:p-0">
       <header className="flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-2">
-          <ProjectMenu />
+        <div className="flex min-w-0 items-center gap-2 print:flex-1 print:justify-center">
+          <div className="print:hidden">
+            <ProjectMenu />
+          </div>
           <TitleInput />
         </div>
-        <Transport />
+        <div className="print:hidden">
+          <Transport />
+        </div>
       </header>
-      <Toolbar />
-      <p className="text-muted-foreground -mt-2 text-xs leading-6">
+      <div className="print:hidden">
+        <Toolbar />
+      </div>
+      <p className="text-muted-foreground -mt-2 text-xs leading-6 print:hidden">
         Click to add notes, drag to change pitch. Click above the staff for chords, below the lead for lyrics. <Kbd>3</Kbd>–<Kbd>6</Kbd>{' '}
         duration · <Kbd>.</Kbd> dot · <Kbd>↑</Kbd>
         <Kbd>↓</Kbd> semitone · <Kbd>←</Kbd>
         <Kbd>→</Kbd> select · <Kbd>Del</Kbd> delete · <Kbd>⌘Z</Kbd> undo · <Kbd>Space</Kbd> play
       </p>
-      <VoicesPanel />
+      <div className="print:hidden">
+        <VoicesPanel />
+      </div>
       <ScoreView score={score} />
     </main>
   )

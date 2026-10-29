@@ -132,6 +132,15 @@
 }
 .score svg {
   display: block;
+  overflow: visible;
+}
+@media print {
+  /* Laid out for the screen width; shrink to the page. */
+  .score svg {
+    width: 100%;
+    height: auto;
+    break-inside: avoid;
+  }
 }
 /* VexFlow puts stroke="black" on its groups; our labels would inherit an outline. */
 .score text {

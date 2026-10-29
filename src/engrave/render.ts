@@ -155,6 +155,7 @@ export function renderScore(
   const pendingTie = new Map<string, { note: StaveNote; line: number }>() // per voice
   const beamGroups = Beam.getDefaultBeamGroups(`${score.timeSignature.beats}/4`)
   let cursorY = 10
+  const groups: SVGElement[] = []
 
   // Each line is drawn at y = 0 inside its own group, then moved down below the
   // previous one, so a system is exactly as tall as its contents.
@@ -291,6 +292,7 @@ export function renderScore(
     const boxHeight = lyricY.at(-1)! + 8 - boxTop
     const dy = cursorY - boxTop
     group.setAttribute('transform', `translate(0 ${dy})`)
+    groups.push(group)
     system.top = cursorY
     system.bottom = cursorY + boxHeight
     system.chordY = chordY + dy
@@ -305,5 +307,27 @@ export function renderScore(
 
   hit.height = cursorY
   renderer.resize(width, cursorY)
+  splitSystems(container, ctx.svg, groups, hit)
   return hit
+}
+
+/**
+ * Gives each system its own <svg>, so printing can break pages between systems. The
+ * pieces tile the original drawing exactly (each views its own slice of it), so the
+ * overlay and hit map coordinates are unchanged.
+ */
+function splitSystems(container: HTMLDivElement, svg: SVGSVGElement, groups: SVGElement[], hit: HitMap) {
+  const { width, systems } = hit
+  svg.remove()
+  groups.forEach((group, i) => {
+    const top = i === 0 ? 0 : systems[i].top - SYSTEM_GAP / 2
+    const bottom = i === groups.length - 1 ? hit.height : systems[i + 1].top - SYSTEM_GAP / 2
+    const piece = svg.cloneNode(false) as SVGSVGElement
+    piece.removeAttribute('style')
+    piece.setAttribute('width', String(width))
+    piece.setAttribute('height', String(bottom - top))
+    piece.setAttribute('viewBox', `0 ${top} ${width} ${bottom - top}`)
+    piece.appendChild(group)
+    container.appendChild(piece)
+  })
 }

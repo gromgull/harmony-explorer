@@ -1,7 +1,9 @@
+import { Minus, Plus } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { ChordInput } from '@/components/ChordInput'
 import { LyricInput } from '@/components/LyricInput'
 import { PlaybackCursor } from '@/components/PlaybackCursor'
+import { Button } from '@/components/ui/button'
 import * as cmd from '@/editor/commands'
 import { locate, lyricAnchor, noteAt, yForIndex, type Target } from '@/editor/hittest'
 import { fontsReady } from '@/engrave/fonts'
@@ -122,7 +124,7 @@ export function ScoreView({ score }: { score: Score }) {
   })()
 
   return (
-    <div ref={wrapper} className="relative w-full select-none">
+    <div ref={wrapper} className="group relative w-full select-none">
       <div ref={canvas} className="score" />
       {hit && (
         <svg
@@ -145,8 +147,46 @@ export function ScoreView({ score }: { score: Score }) {
           <PlaybackCursor hit={hit} />
         </svg>
       )}
+      {hit && <BarButtons hit={hit} measureCount={score.measureCount} />}
       {chordEdit && chordPos && <ChordInput key={chordEdit.tick} score={score} tick={chordEdit.tick} {...chordPos} />}
       {lyricEdit && lyricPos && <LyricInput key={lyricEdit.noteId} score={score} noteId={lyricEdit.noteId} caret={lyricEdit.caret} {...lyricPos} />}
+    </div>
+  )
+}
+
+/**
+ * Add/remove bar buttons by the final barline, shown while hovering the score: beside
+ * the last system when it leaves room, else underneath.
+ */
+function BarButtons({ hit, measureCount }: { hit: HitMap; measureCount: number }) {
+  const system = hit.systems.at(-1)
+  const end = system?.measures.at(-1)?.x1
+  if (!system || end === undefined) return null
+  const top = system.staves[0].topLineY
+  const last = system.staves.at(-1)!
+  const bottom = last.topLineY + 4 * last.spacing
+  const beside = end + 36 < hit.width
+  const style = beside
+    ? { left: end + 8, top: (top + bottom) / 2, transform: 'translateY(-50%)' }
+    : { left: end, top: system.bottom + 2, transform: 'translateX(-100%)' }
+  return (
+    <div
+      className={`absolute flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 print:hidden ${beside ? 'flex-col' : ''}`}
+      style={style}
+    >
+      <Button variant="outline" size="icon-xs" onClick={() => cmd.changeBarCount(1)} aria-label="Add a bar" title="Add a bar">
+        <Plus />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon-xs"
+        onClick={() => cmd.changeBarCount(-1)}
+        disabled={measureCount <= 1}
+        aria-label="Remove the last bar"
+        title="Remove the last bar"
+      >
+        <Minus />
+      </Button>
     </div>
   )
 }

@@ -114,6 +114,10 @@ export function nextBeat(tick: Tick): Tick | null {
   return next < scoreLength(score()) ? next : null
 }
 
+/** Adds or removes a bar at the end; removing drops whatever was in it. */
+export const changeBarCount = (delta: 1 | -1) =>
+  dispatch({ type: 'setMeasureCount', measureCount: score().measureCount + delta })
+
 /** Plays from the selected note (or the start), or stops if playing. */
 export function togglePlay() {
   if (usePlaybackStore.getState().status !== 'stopped') return stop()
